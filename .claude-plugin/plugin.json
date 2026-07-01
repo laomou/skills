@@ -1,0 +1,17 @@
+{
+  "name": "example-skills",
+  "description": "Example Agent Skills demonstrating the .claude-plugin pattern — a collection of reusable AI agent skills",
+  "version": "0.1.0",
+  "author": {
+    "name": "laomou"
+  },
+  "homepage": "https://github.com/mourui/skills",
+  "repository": "https://github.com/mourui/skills",
+  "license": "MIT",
+  "keywords": [
+    "skills",
+    "claude-plugin",
+    "agent-skills",
+    "example"
+  ]
+}

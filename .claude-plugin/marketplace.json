@@ -1,0 +1,16 @@
+{
+  "plugins": [
+    {
+      "name": "hello-world",
+      "description": "A minimal example skill — greets the user and demonstrates the basic SKILL.md pattern with YAML frontmatter and markdown instructions",
+      "path": "skills/hello-world",
+      "tags": ["example", "beginner"]
+    },
+    {
+      "name": "hello-script",
+      "description": "A skill with bundled scripts — shows how to package helper scripts alongside SKILL.md for more complex automation tasks",
+      "path": "skills/hello-script",
+      "tags": ["example", "scripting"]
+    }
+  ]
+}
