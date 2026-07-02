@@ -1,16 +1,14 @@
 {
+  "name": "laomou-skills",
+  "description": "laomou 的 Claude 插件市场",
+  "owner": {
+    "name": "laomou"
+  },
   "plugins": [
     {
-      "name": "hello-world",
-      "description": "A minimal example skill — greets the user and demonstrates the basic SKILL.md pattern with YAML frontmatter and markdown instructions",
-      "path": "skills/hello-world",
-      "tags": ["example", "beginner"]
-    },
-    {
-      "name": "hello-script",
-      "description": "A skill with bundled scripts — shows how to package helper scripts alongside SKILL.md for more complex automation tasks",
-      "path": "skills/hello-script",
-      "tags": ["example", "scripting"]
+      "name": "lm-mem",
+      "source": "./plugins/lm-mem",
+      "description": "本地语义(向量)记忆:让 Claude 跨会话保存与检索记忆,Mem0 风格接口,支持 user/agent 作用域"
     }
   ]
 }
