@@ -48,6 +48,9 @@ _RESERVED_KEYS = _SCOPE_KEYS + ("created_at", "updated_at", "tags", "expires_at"
 _MD_PREFIX = "m:"
 # 添加去重:语义相似度 >= 该阈值视为疑似重复。
 _DEDUP_THRESHOLD = 0.85
+# 检索时的过取上限:过期项会被过滤掉,故一次多取 limit*_OVERFETCH 条,
+# 不够再回退到"取全部候选"补齐,避免过期项挤掉有效结果。
+_OVERFETCH = 3
 
 
 def _scope_meta(user_id, agent_id, app_id, run_id):
@@ -170,6 +173,24 @@ def _fmt(mem_id, doc, meta):
     return "\n".join(lines)
 
 
+def _render_hits(res, limit, now=None):
+    """把 query 结果渲染成行,跳过过期项,最多 limit 条。"""
+    ids = res["ids"][0] if res["ids"] else []
+    if not ids:
+        return []
+    now = now if now is not None else time.time()
+    lines = []
+    for mem_id, doc, meta, dist in zip(
+        ids, res["documents"][0], res["metadatas"][0], res["distances"][0]
+    ):
+        if _is_expired(meta, now):
+            continue
+        lines.append(f"[相似度 {1 - dist:.2f}] " + _fmt(mem_id, doc, meta))
+        if len(lines) >= limit:
+            break
+    return lines
+
+
 @mcp.tool()
 def add_memory(
     content: str = "",
@@ -265,22 +286,15 @@ def search_memories(
     clauses = _clauses(user_id, agent_id, app_id, run_id)
     clauses += _metadata_filter_clauses(metadata_filter)
     where = _combine(clauses)
-    # 多取一些以便过滤掉过期项后仍够数。
-    res = _collection.query(query_texts=[query], n_results=limit + 20, where=where)
-    ids = res["ids"][0]
-    if not ids:
-        return "没有匹配的记忆。"
 
-    now = time.time()
-    lines = []
-    for mem_id, doc, meta, dist in zip(
-        ids, res["documents"][0], res["metadatas"][0], res["distances"][0]
-    ):
-        if _is_expired(meta, now):
-            continue
-        lines.append(f"[相似度 {1 - dist:.2f}] " + _fmt(mem_id, doc, meta))
-        if len(lines) >= limit:
-            break
+    total = _collection.count()
+    # 过期项会被过滤掉,先多取一些;若结果被过期项挤占到不足,再退化为取全部候选补齐。
+    n = min(total, max(limit * _OVERFETCH, limit + 10))
+    res = _collection.query(query_texts=[query], n_results=n, where=where)
+    lines = _render_hits(res, limit)
+    if len(lines) < limit and n < total:
+        res = _collection.query(query_texts=[query], n_results=total, where=where)
+        lines = _render_hits(res, limit)
     if not lines:
         return "没有匹配的记忆。"
     return "\n\n".join(lines)
@@ -334,24 +348,39 @@ def get_memory(mem_id: str) -> str:
 
 
 @mcp.tool()
-def update_memory(mem_id: str, content: str = "", metadata: str = "", tags: str = "") -> str:
-    """按 id 更新记忆(保留原作用域;可同时改文本/元数据/标签)。
+def update_memory(
+    mem_id: str,
+    content: str = "",
+    metadata: str = "",
+    tags: str = "",
+    ttl_seconds: int = 0,
+) -> str:
+    """按 id 更新记忆(保留原作用域;可同时改文本/元数据/标签/过期时间)。
 
     Args:
         mem_id: 记忆 id。
         content: 可选,新的文本内容(留空则不改文本)。
         metadata: 可选,JSON 对象字符串,合并进现有自定义元数据。
         tags: 可选,新的逗号分隔标签(留空则不改)。
+        ttl_seconds: 可选。>0 从现在起续期该秒数;<0 立即清除过期时间(转为永久);
+                     0(默认)不改动过期设置。
     """
     existing = _collection.get(ids=[mem_id], include=["documents", "metadatas"])
     if not existing["ids"]:
         return f"未找到 id={mem_id} 的记忆。"
     meta = existing["metadatas"][0] or {}
-    meta["updated_at"] = time.time()
+    now = time.time()
+    meta["updated_at"] = now
     if tags:
         meta["tags"] = tags.strip()
     if metadata:
         meta.update(_parse_metadata(metadata))
+    if ttl_seconds > 0:
+        meta["expires_at"] = now + ttl_seconds
+    elif ttl_seconds < 0:
+        # ChromaDB 的 update 合并 metadata、无法删除键,故用 0 作"永久"哨兵
+        #(_is_expired 把 falsy 视为不过期,_fmt 也不显示)。
+        meta["expires_at"] = 0
     doc = content.strip() if content else existing["documents"][0]
     _collection.update(ids=[mem_id], documents=[doc], metadatas=[meta])
     return f"已更新 id={mem_id}"
@@ -455,11 +484,14 @@ def memory_stats(
 
     now = time.time()
     expired = sum(1 for m in metas if _is_expired(m, now))
+    active = total - expired
     scope_counts = {k: {} for k in _SCOPE_KEYS}
     tag_counts = {}
     category_counts = {}
     for m in metas:
         m = m or {}
+        if _is_expired(m, now):
+            continue  # 聚合口径只统计有效(未过期)记忆,与检索一致。
         for key in _SCOPE_KEYS:
             if m.get(key):
                 scope_counts[key][m[key]] = scope_counts[key].get(m[key], 0) + 1
@@ -471,7 +503,7 @@ def memory_stats(
         if cat is not None:
             category_counts[cat] = category_counts.get(cat, 0) + 1
 
-    lines = [f"总记忆数: {total}", f"已过期(待清理): {expired}"]
+    lines = [f"有效记忆数: {active}", f"已过期(待清理): {expired}", f"总计: {total}"]
     for key in _SCOPE_KEYS:
         if scope_counts[key]:
             inner = ", ".join(f"{k}={v}" for k, v in sorted(scope_counts[key].items()))

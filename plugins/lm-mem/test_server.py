@@ -123,9 +123,60 @@ def test_stats(srv):
     srv.add_memory(content="b", user_id="u1", tags="pref", force=True,
                    metadata=json.dumps({"category": "y"}))
     stats = srv.memory_stats(user_id="u1")
-    assert "总记忆数: 2" in stats
+    assert "有效记忆数: 2" in stats
+    assert "总计: 2" in stats
     assert "pref=2" in stats
     assert "category" in stats
+
+
+def test_stats_excludes_expired_from_aggregates(srv):
+    # #1 修复:过期项不计入有效数/标签/分类聚合,只体现在"已过期"。
+    srv.add_memory(content="有效", user_id="u1", tags="live")
+    mid = _id_from(srv.add_memory(content="过期", user_id="u1", tags="dead",
+                                  force=True, ttl_seconds=3600))
+    g = srv._collection.get(ids=[mid], include=["metadatas"])
+    meta = g["metadatas"][0]
+    meta["expires_at"] = 1.0
+    srv._collection.update(ids=[mid], metadatas=[meta])
+    stats = srv.memory_stats(user_id="u1")
+    assert "有效记忆数: 1" in stats
+    assert "已过期(待清理): 1" in stats
+    assert "总计: 2" in stats
+    assert "live=1" in stats
+    assert "dead" not in stats  # 过期标签不计入聚合
+
+
+def test_update_ttl_renew_and_clear(srv):
+    # #2 增强:update_memory 可续期与清除过期。
+    mid = _id_from(srv.add_memory(content="临时", user_id="u1", ttl_seconds=3600))
+    # 清除过期 -> 变永久(哨兵值 0,检索不再视为过期)
+    srv.update_memory(mid, ttl_seconds=-1)
+    meta = srv._collection.get(ids=[mid], include=["metadatas"])["metadatas"][0]
+    assert not meta.get("expires_at")  # 0 / 不存在都算永久
+    assert not srv._is_expired(meta)
+    # 重新续期
+    srv.update_memory(mid, ttl_seconds=7200)
+    meta = srv._collection.get(ids=[mid], include=["metadatas"])["metadatas"][0]
+    assert meta["expires_at"] > 0
+    # ttl_seconds=0 不动过期设置,但仍能改文本
+    srv.update_memory(mid, content="改了文本")
+    meta = srv._collection.get(ids=[mid], include=["metadatas"])["metadatas"][0]
+    assert meta["expires_at"] > 0
+
+
+def test_search_overfetch_past_expired(srv):
+    # #3:即使前面挤了很多过期项,有效项仍能被返回。
+    for i in range(30):
+        mid = _id_from(srv.add_memory(content=f"过期便签 {i}", user_id="u1",
+                                      force=True, ttl_seconds=3600))
+        g = srv._collection.get(ids=[mid], include=["metadatas"])
+        m = g["metadatas"][0]
+        m["expires_at"] = 1.0
+        srv._collection.update(ids=[mid], metadatas=[m])
+    srv.add_memory(content="这是唯一有效的便签", user_id="u1", force=True)
+    res = srv.search_memories(query="便签", user_id="u1", limit=5)
+    assert "这是唯一有效的便签" in res
+    assert "过期便签" not in res
 
 
 def test_export_json_and_csv(srv):

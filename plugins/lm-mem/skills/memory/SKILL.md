@@ -16,7 +16,7 @@ description: 跨会话记忆。当用户分享值得长期记住的信息(偏好
 | `search_memories(query, limit?, user_id?, metadata_filter?, ...)` | 按语义相似度检索(可按作用域/元数据过滤) |
 | `get_memories(limit?, offset?, user_id?, metadata_filter?, ...)` | 列出记忆(支持分页、作用域/元数据过滤) |
 | `get_memory(mem_id)` | 按 id 获取单条 |
-| `update_memory(mem_id, content?, metadata?, tags?)` | 按 id 更新文本/元数据/标签 |
+| `update_memory(mem_id, content?, metadata?, tags?, ttl_seconds?)` | 按 id 更新文本/元数据/标签/过期时间 |
 | `delete_memory(mem_id)` | 按 id 删除单条 |
 | `delete_all_memories(user_id?, ...)` | 批量删除某作用域内全部记忆 |
 | `delete_entities(entity_type, entity_id)` | 删除某实体及其记忆 |
