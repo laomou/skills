@@ -13,7 +13,7 @@ Claude Code 插件市场,当前收录一个插件:**lm-mem** —— 本地语义
         ├── .claude-plugin/
         │   └── plugin.json      # 插件清单(name: lm-mem)
         ├── .mcp.json            # 注册 MCP server
-        ├── server.py            # MCP server:Mem0 风格记忆接口
+        ├── server.py            # MCP server:语义记忆接口
         ├── pyproject.toml       # Python 依赖
         └── skills/
             └── memory/
@@ -25,7 +25,7 @@ Claude Code 插件市场,当前收录一个插件:**lm-mem** —— 本地语义
 让 Claude 跨会话保存与检索记忆,语义检索(意思相近即可命中),记忆本地存储。
 每条记忆可绑定 `user_id` / `agent_id` / `app_id` / `run_id` 作用域,做多用户/场景隔离。
 
-### MCP 工具(Mem0 风格,12 个)
+### MCP 工具(12 个)
 
 | 工具 | 用途 |
 |------|------|

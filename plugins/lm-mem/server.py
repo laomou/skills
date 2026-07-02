@@ -1,11 +1,11 @@
-"""lm-mem MCP Server — Claude 本地语义(向量)记忆,Mem0 风格接口。
+"""lm-mem MCP Server — Claude 本地语义(向量)记忆接口。
 
 - 框架: FastMCP (官方 mcp 包), stdio 传输
 - 存储/检索: ChromaDB 本地持久化 + 内置 all-MiniLM-L6-v2 embedding
   语义检索开箱即用,无需任何 API key(首次运行自动下载模型,约 80MB)。
 
 作用域(scope):每条记忆可归属到 user_id / agent_id / app_id / run_id,
-检索和列举都可按这些维度过滤,对齐 Mem0 的实体模型。一条记忆可同时关联多个
+检索和列举都可按这些维度过滤,对齐实体模型。一条记忆可同时关联多个
 作用域,不会为每个实体复制副本。
 
 自定义元数据(metadata):除作用域与 tags 外,还可附加任意 category / importance /
