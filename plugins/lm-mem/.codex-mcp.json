@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "memory": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--project",
+        "${CODEX_PLUGIN_ROOT}",
+        "python",
+        "${CODEX_PLUGIN_ROOT}/server.py"
+      ]
+    }
+  }
+}

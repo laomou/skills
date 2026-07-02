@@ -7,17 +7,22 @@ Claude Code 插件市场,当前收录一个插件:**lm-mem** —— 本地语义
 ```
 .
 ├── .claude-plugin/
-│   └── marketplace.json         # 市场清单(name: laomou-skills)
+│   └── marketplace.json         # Claude 市场清单(name: laomou-skills)
+├── .codex-plugin/
+│   └── marketplace.json         # Codex 市场清单(name: laomou-skills)
 └── plugins/
     └── lm-mem/                  # 插件:本地语义记忆
         ├── .claude-plugin/
-        │   └── plugin.json      # 插件清单(name: lm-mem)
-        ├── .mcp.json            # 注册 MCP server
-        ├── server.py            # MCP server:语义记忆接口
+        │   └── plugin.json      # Claude 插件清单
+        ├── .codex-plugin/
+        │   └── plugin.json      # Codex 插件清单(skills/mcpServers 字段指向资源)
+        ├── .mcp.json            # Claude 的 MCP 注册(${CLAUDE_PLUGIN_ROOT})
+        ├── .codex-mcp.json      # Codex 的 MCP 注册(${CODEX_PLUGIN_ROOT})
+        ├── server.py            # MCP server:语义记忆接口(两端共用)
         ├── pyproject.toml       # Python 依赖
         └── skills/
             └── memory/
-                └── SKILL.md     # 技能:告诉 Claude 何时存/取记忆
+                └── SKILL.md     # 技能:告诉助手何时存/取记忆(两端共用)
 ```
 
 ## 插件:lm-mem
@@ -46,6 +51,8 @@ Claude Code 插件市场,当前收录一个插件:**lm-mem** —— 本地语义
 
 ## 安装
 
+### Claude Code
+
 ```shell
 # 添加市场(GitHub 仓库路径 owner/repo)
 /plugin marketplace add laomou/skills
@@ -58,6 +65,13 @@ Claude Code 插件市场,当前收录一个插件:**lm-mem** —— 本地语义
 
 > 本地开发验证也可直接用本地目录:
 > `/plugin marketplace add /path/to/skills`
+
+### Codex
+
+Codex 复用同一份 `server.py` 与 `skills/`,通过 `.codex-plugin` / `.codex-mcp.json`
+接入。在 Codex 里添加本仓库为插件市场并安装 `lm-mem` 即可(顶层
+`.codex-plugin/marketplace.json` 已声明该插件)。MCP server 用 `${CODEX_PLUGIN_ROOT}`
+定位,由 `uv` 自动拉起、管理依赖,与 Claude 端行为一致。
 
 ## 依赖
 
