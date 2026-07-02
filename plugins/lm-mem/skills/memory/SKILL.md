@@ -1,6 +1,6 @@
 ---
 name: memory
-description: 跨会话记忆。当用户分享值得长期记住的信息(偏好、身份、项目决策等事实),或提问可能依赖过往上下文时使用;短期上下文用 run_id + TTL。通过 lm-mem MCP 的工具保存与检索。
+description: 跨会话记住用户的偏好、身份、项目决策等持久信息,并在需要过往上下文时检索回来。当用户透露值得长期记住的事、说"记住…"、或提问可能依赖历史时使用;短期上下文用 run_id + TTL。
 ---
 
 ## 作用
@@ -55,6 +55,22 @@ description: 跨会话记忆。当用户分享值得长期记住的信息(偏好
 - **存精炼后的原子事实,一条一事**,用第一人称陈述,而不是整段原始对话。
 - 保存前判断:**下次会话还有意义吗**?是 → 存;只对当前对话有用 → 不存。
 
+一个把作用域、标签、元数据串起来的完整例子:
+
+```
+add_memory(
+  content="用户偏好用 pytest 写测试,不用 unittest",
+  user_id="mourui",                         # 长期偏好 → 落到 user
+  tags="preference,testing",
+  metadata='{"category":"pref","importance":"high"}',
+)
+# 之后按语义 + 元数据检索:
+search_memories(query="怎么写测试", user_id="mourui",
+                metadata_filter='{"category":"pref"}')
+```
+
+`add_memory` 默认会先自动查重(见下文「更新与去重」),同一事实反复说不会重复入库。
+
 ### 不该存
 
 - **密钥、令牌、未脱敏的 PII**:记忆按设计是可检索的,敏感值先脱敏/不存。
@@ -85,7 +101,7 @@ description: 跨会话记忆。当用户分享值得长期记住的信息(偏好
 - `add_memory` **默认自动查重**:插入前在同作用域内做语义相似度检索,命中高相似度
   (≥0.85)时不插入,直接返回疑似重复项,并提示你决策:内容有变化 → `update_memory`
   覆盖;已足够 → 跳过;确需新增 → `add_memory(..., force=True)`。
-- 已有记忆内容变化时,用 `update_memory` 覆盖(可只改文本、只改 metadata 或只改 tags)。
+- 事实变化时优先 `update_memory` 原地更新(文本/标签/元数据/`ttl_seconds` 均可单独改),而非另存一条。
 
 ## 管理与治理
 
