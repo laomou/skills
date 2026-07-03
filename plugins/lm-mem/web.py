@@ -28,6 +28,8 @@ import db as _db
 
 # 为避免与 helpers 命名冲突(都有 _SCOPE_KEYS 等),建短别名。
 import helpers as _hlp
+
+_VERSION = "0.2.0"
 from mcp_tools import memory_stats as _stats_fn
 
 _HOST = "127.0.0.1"
@@ -223,8 +225,14 @@ def _page(title, body):
     return (
         "<!doctype html><html><head><meta charset='utf-8'>"
         f"<title>{_esc(title)}</title><style>{_PAGE_CSS}</style></head>"
-        f"<body><div class='wrap'><h1>🧠 lm-mem 记忆台</h1>{body}</div></body></html>"
+        f"<body><div class='wrap'><h1>🧠 lm-mem 记忆台 <span style='font-size:12px;color:#999;font-weight:normal'>v{_VERSION}</span></h1>{body}</div></body></html>"
     )
+
+
+def _nav(links=None):
+    links = links or [("/", "列表"), ("/stats", "统计")]
+    items = "".join(f'<a href="{u}">{n}</a>' for u, n in links)
+    return f'<div class="nav">{items}</div>'
 
 
 class _Handler(BaseHTTPRequestHandler):
@@ -246,6 +254,10 @@ class _Handler(BaseHTTPRequestHandler):
         parsed = urlparse(self.path)
         path = parsed.path.rstrip("/") or "/"
         qs = parse_qs(parsed.query)
+
+        if path == "/version" or path == "/api/version":
+            return self._send(200, json.dumps({"version": _VERSION}, ensure_ascii=False),
+                              "application/json; charset=utf-8")
 
         try:
             if path == "/api/list" or path == "/":
