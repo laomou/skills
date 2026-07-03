@@ -14,6 +14,30 @@ from urllib.parse import urlparse
 
 import chromadb
 
+
+def _optimize_sqlite(db_path):
+    """对 chroma.sqlite3 设置高性能 PRAGMA。
+
+    在已有 chroma 连接之外独立打开一次 SQLite 设置 WAL 等 PRAGMA,
+    这些设置持久化在数据库文件中,后续连接(含 chroma 服务端)继承。
+    """
+    try:
+        import sqlite3
+
+        path = str(Path(db_path) / "chroma.sqlite3")
+        if not Path(path).exists():
+            return
+        conn = sqlite3.connect(path)
+        conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute("PRAGMA synchronous=NORMAL")
+        conn.execute("PRAGMA cache_size=-64000")
+        conn.execute("PRAGMA temp_store=MEMORY")
+        conn.execute("PRAGMA mmap_size=268435456")
+        conn.commit()
+        conn.close()
+    except Exception:
+        pass  # PRAGMA 优化非致命,失败不影响功能
+
 _data_root = os.environ.get("CLAUDE_PLUGIN_DATA") or str(
     Path.home() / ".claude" / "lm-mem"
 )
@@ -86,6 +110,7 @@ def _ensure_backend(host, port, db_path, explicit_url=False, wait_seconds=30.0):
     """
     client = _connect(host, port)
     if client is not None:
+        _optimize_sqlite(db_path)
         return client
     if explicit_url:
         raise RuntimeError(
@@ -97,6 +122,7 @@ def _ensure_backend(host, port, db_path, explicit_url=False, wait_seconds=30.0):
     while time.time() < deadline:
         client = _connect(host, port)
         if client is not None:
+            _optimize_sqlite(db_path)
             return client
         time.sleep(0.5)
     print(
@@ -130,5 +156,11 @@ def _init_client():
 _client = _init_client()
 _collection = _client.get_or_create_collection(
     name="memories",
-    metadata={"hnsw:space": "cosine"},
+    metadata={
+        "hnsw:space": "cosine",
+        "hnsw:M": 4,
+        "hnsw:construction_ef": 30,
+        "hnsw:search_ef": 2,
+        "hnsw:num_threads": 20,
+    },
 )
