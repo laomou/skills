@@ -627,10 +627,9 @@ class _Handler(BaseHTTPRequestHandler):
         if not self._local_origin_ok():
             return self._send(403, json.dumps({"error": "forbidden origin"}),
                               "application/json; charset=utf-8")
-        msg = _delete_fn(mid)
-        code = 200 if "已删除" in msg else 404
-        return self._send(code, json.dumps({"ok": "已删除" in msg, "message": msg},
-                                           ensure_ascii=False),
+        result = json.loads(_delete_fn(mid))
+        code = 200 if result["ok"] else 404
+        return self._send(code, json.dumps(result, ensure_ascii=False),
                           "application/json; charset=utf-8")
 
     def do_POST(self):
@@ -650,11 +649,11 @@ class _Handler(BaseHTTPRequestHandler):
         if not self._local_origin_ok():
             return self._send(403, json.dumps({"error": "forbidden origin"}),
                               "application/json; charset=utf-8")
-        msg = _delete_fn(mid)
-        ok = "已删除" in msg
+        result = json.loads(_delete_fn(mid))
+        ok = result["ok"]
         if api:
             return self._send(200 if ok else 404,
-                              json.dumps({"ok": ok, "message": msg}, ensure_ascii=False),
+                              json.dumps(result, ensure_ascii=False),
                               "application/json; charset=utf-8")
         # 浏览器表单:跳回列表,带结果提示
         return self._redirect(f"/?deleted={1 if ok else 0}&id={_esc(mid[:8])}")

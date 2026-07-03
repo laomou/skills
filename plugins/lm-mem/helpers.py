@@ -126,6 +126,22 @@ def _is_expired(meta, now=None):
     return exp <= (now if now is not None else time.time())
 
 
+def _to_dict(mem_id, doc, meta):
+    """把一条记忆转成结构化 dict(用于 JSON 输出)。"""
+    meta = meta or {}
+    rec = {
+        "id": mem_id,
+        "content": doc,
+        "tags": meta.get("tags") or "",
+        "created_at": meta.get("created_at"),
+        "updated_at": meta.get("updated_at"),
+        "expires_at": meta.get("expires_at"),
+        "scope": {k: meta[k] for k in _SCOPE_KEYS if k in meta},
+        "metadata": _user_metadata(meta),
+    }
+    return rec
+
+
 def _fmt(mem_id, doc, meta):
     meta = meta or {}
     scope = {k: meta[k] for k in _SCOPE_KEYS if k in meta}
@@ -142,19 +158,21 @@ def _fmt(mem_id, doc, meta):
     return "\n".join(lines)
 
 
-def _render_hits(res, limit, now=None):
-    """把 query 结果渲染成行,跳过过期项,最多 limit 条。"""
+def _hits_to_dicts(res, limit, now=None):
+    """把 query 结果转成 dict 列表,附带 similarity,跳过过期项,最多 limit 条。"""
     ids = res["ids"][0] if res["ids"] else []
     if not ids:
         return []
     now = now if now is not None else time.time()
-    lines = []
+    out = []
     for mem_id, doc, meta, dist in zip(
         ids, res["documents"][0], res["metadatas"][0], res["distances"][0]
     ):
         if _is_expired(meta, now):
             continue
-        lines.append(f"[相似度 {1 - dist:.2f}] " + _fmt(mem_id, doc, meta))
-        if len(lines) >= limit:
+        rec = _to_dict(mem_id, doc, meta)
+        rec["similarity"] = round(1 - dist, 3)
+        out.append(rec)
+        if len(out) >= limit:
             break
-    return lines
+    return out
