@@ -79,6 +79,40 @@ lm-mem 的 MCP server 用 Python 编写,依赖见 `plugins/lm-mem/pyproject.toml
 `.mcp.json` 通过 [`uv`](https://github.com/astral-sh/uv) 拉起 server 并自动管理依赖,
 首次运行会初始化本地语义模型。
 
+## 并发与多会话
+
+lm-mem **默认即共享后端**,无需任何配置:所有实例连到同一个常驻 Chroma 后端,
+由后端独占数据与索引。这样多个独立会话(如同时开多个 Claude/Codex 窗口)同用
+一个记忆库时,不会因争抢同一个 SQLite 文件而出现写锁冲突或内存索引不同步。
+
+第一个启动的实例会**自动拉起**后端(靠端口抢占保证全局只有一个),后续实例自动
+复用,无需手动起服务。若后端始终无法就绪,会自动回退到进程内嵌入式存储,保证可用。
+
+可选环境变量(一般无需设置):
+
+| 变量 | 默认值 | 说明 |
+| --- | --- | --- |
+| `MEMORY_CHROMA_HOST` | `127.0.0.1` | 后端监听地址 |
+| `MEMORY_CHROMA_PORT` | `8901` | 后端监听端口(被占用时可改) |
+| `MEMORY_CHROMA_URL` | (空) | 显式指向已存在的后端(如 `http://host:port`);设了则只连不启 |
+
+后端日志写入 `<数据目录>/chroma-server.log`。
+
+## WEB 记忆台
+
+lm-mem 自带一个只读 Web 界面,可在浏览器里查看/检索已保存的记忆,无需翻 MCP 工具。
+
+```shell
+cd plugins/lm-mem
+uv run python web.py            # 默认 http://127.0.0.1:7531
+```
+
+支持按 `user_id` / `agent_id` / `app_id` / `run_id` 过滤、关键词语义检索、
+查看单条详情与统计。仅本机访问、只读,不会改动任何记忆数据。
+也有 `/api/list`、`/api/search`、`/api/mem/<id>`、`/api/stats` 等 JSON 接口。
+
+环境变量:`LM_MEM_WEB_HOST`(默认 `127.0.0.1`)、`LM_MEM_WEB_PORT`(默认 `7531`)。
+
 ## 测试
 
 ```shell
