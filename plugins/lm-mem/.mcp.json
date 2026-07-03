@@ -12,7 +12,8 @@
       "env": {
         "LM_MEM_WEB": "on",
         "LM_MEM_WEB_HOST": "127.0.0.1",
-        "LM_MEM_WEB_PORT": "7531"
+        "LM_MEM_WEB_PORT": "7531",
+        "MEMORY_CHROMA_URL": "http://127.0.0.1:8901"
       }
     }
   }
