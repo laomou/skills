@@ -1,6 +1,6 @@
 [project]
 name = "memory-mcp"
-version = "0.1.0"
+version = "0.2.0"
 description = "Claude 本地语义记忆 MCP Server"
 requires-python = ">=3.10"
 dependencies = [

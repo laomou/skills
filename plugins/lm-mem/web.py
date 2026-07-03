@@ -324,7 +324,9 @@ def start_web_thread(host=None, port=None):
         httpd = ThreadingHTTPServer((host, port), _Handler)
         t = threading.Thread(target=httpd.serve_forever, daemon=True)
         t.start()
-        print(f"[lm-mem] Web 记忆台: http://{host}:{port}", file=__import__("sys").stderr)
+        import sys as _sys
+        _sys.stderr.write(f"[lm-mem] Web 记忆台: http://{host}:{port} (只读)\n")
+        _sys.stderr.flush()
     except OSError:
         pass  # 端口被占,说明已有实例起了 Web 台,静默跳过
 

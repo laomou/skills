@@ -74,7 +74,7 @@ def add_memory(
 
     scope_clauses = _clauses(user_id, agent_id, app_id, run_id)
 
-    if not force and _collection.count() > 0:
+    if not force:
         res = _collection.query(
             query_texts=[text],
             n_results=1,
@@ -123,20 +123,13 @@ def search_memories(
         metadata_filter: 可选,JSON 对象字符串,按自定义 metadata 精确过滤
                          (如 '{"category":"pref"})。
     """
-    if _collection.count() == 0:
-        return "记忆库为空。"
-
     clauses = _clauses(user_id, agent_id, app_id, run_id)
     clauses += _metadata_filter_clauses(metadata_filter)
     where = _combine(clauses)
 
-    total = _collection.count()
-    n = min(total, max(limit * _OVERFETCH, limit + 10))
+    n = max(limit * _OVERFETCH, limit + 10, 100)
     res = _collection.query(query_texts=[query], n_results=n, where=where)
     lines = _render_hits(res, limit)
-    if len(lines) < limit and n < total:
-        res = _collection.query(query_texts=[query], n_results=total, where=where)
-        lines = _render_hits(res, limit)
     if not lines:
         return "没有匹配的记忆。"
     return "\n\n".join(lines)
@@ -430,7 +423,7 @@ def purge_expired() -> str:
 # 开箱即带 Web 记忆台
 # 由环境变量 LM_MEM_WEB(默认 on)控制,设 0/off 时禁用。
 # Web 台用后台 daemon 线程 + 端口抢占保证全局单例,和 Chroma 后端一样。
-if os.environ.get("LM_MEM_WEB", "on").strip().lower() not in ("0", "off", "no", "false"):
+if os.environ.get("LM_MEM_WEB", "off").strip().lower() not in ("0", "off", "no", "false"):
     try:
         from web import start_web_thread  # noqa: F811
     except ImportError:
