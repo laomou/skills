@@ -17,3 +17,4 @@ Thumbs.db
 __pycache__/
 *.pyc
 uv.lock
+plugins/lm-mem/memory_mcp.egg-info/
