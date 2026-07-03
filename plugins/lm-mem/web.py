@@ -29,7 +29,7 @@ import db as _db
 # 为避免与 helpers 命名冲突(都有 _SCOPE_KEYS 等),建短别名。
 import helpers as _hlp
 
-_VERSION = "0.2.0"
+_VERSION = "0.1.0"
 from mcp_tools import memory_stats as _stats_fn
 
 _HOST = "127.0.0.1"
