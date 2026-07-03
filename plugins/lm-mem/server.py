@@ -5,7 +5,7 @@
 """
 from __future__ import annotations
 
-from db import _client, _collection, _connect, _ensure_backend, _init_client, _spawn_chroma
+from db import _client, _collection, _connect, _init_client
 from helpers import (
     _clauses,
     _coerce_scalar,

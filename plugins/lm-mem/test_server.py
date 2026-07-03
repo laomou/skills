@@ -10,8 +10,6 @@ import os
 import socket
 import sys
 import tempfile
-import time
-
 import pytest
 
 # 共享后端相关环境变量:每个 srv 测试前清空,避免用例间互相污染。
@@ -44,26 +42,6 @@ def _free_port():
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.bind(("127.0.0.1", 0))
         return s.getsockname()[1]
-
-
-def _kill_chroma_on(port):
-    """清理监听指定端口的 chroma 后端进程(尽力而为)。
-
-    后端可能以 `chroma run ... --port N` 或回退的 `python -c "..." run ... --port N`
-    形式启动,故按 `--port N` 匹配命令行,覆盖两种情况。
-    """
-    import subprocess
-
-    try:
-        out = subprocess.run(
-            ["pgrep", "-f", f"run .*--port {port}"],
-            capture_output=True, text=True,
-        )
-        for pid in out.stdout.split():
-            subprocess.run(["kill", pid], capture_output=True)
-        time.sleep(0.5)  # 给 uvicorn 一点退出时间
-    except Exception:
-        pass
 
 
 def _r(msg):
@@ -300,69 +278,13 @@ def test_scope_not_duplicated(srv):
 
 
 # ---------------------------------------------------------------------------
-# 共享后端相关测试
+# 客户端连接测试
 #
-# 生产默认即共享后端;pytest 下 _init_client 默认走嵌入式以保证隔离与速度。
-# 故这里直接调用 _ensure_backend 等底层函数来验证后端行为。
+# db.py 已简化为纯客户端模式(MEMORY_CHROMA_URL 连接外部后端)。
+# pytest 下 _init_client 走嵌入式 PersistentClient 以保证隔离与速度。
 # ---------------------------------------------------------------------------
 
 
 def test_connect_returns_none_when_no_backend(srv):
     # _connect 连不上应快速返回 None,不抛异常。
     assert srv._connect("127.0.0.1", _free_port()) is None
-
-
-def test_backend_lazy_spawn(srv):
-    # _ensure_backend 首次调用应自动 spawn 后端,返回可用 client。
-    port = _free_port()
-    tmp = tempfile.mkdtemp(prefix="lm-mem-be-")
-    try:
-        client = srv._ensure_backend("127.0.0.1", port, tmp)
-        # 端口上应有 spawn 出来的后端在监听(区别于嵌入式)。
-        assert srv._connect("127.0.0.1", port) is not None
-        col = client.get_or_create_collection("memories",
-                                              metadata={"hnsw:space": "cosine"})
-        col.add(ids=["x1"], documents=["经由共享后端保存"])
-        assert col.count() == 1
-    finally:
-        _kill_chroma_on(port)
-
-
-def test_backend_reuse_existing(srv):
-    # 已有后端时,第二次 _ensure_backend 应复用,并能看到已有数据(索引不分叉)。
-    port = _free_port()
-    tmp = tempfile.mkdtemp(prefix="lm-mem-be-")
-    try:
-        c1 = srv._ensure_backend("127.0.0.1", port, tmp)
-        c1.get_or_create_collection("memories").add(
-            ids=["a1"], documents=["第一实例写入"])
-        c2 = srv._ensure_backend("127.0.0.1", port, tmp)  # 复用,不新起
-        assert srv._connect("127.0.0.1", port) is not None
-        assert c2.get_or_create_collection("memories").count() == 1
-    finally:
-        _kill_chroma_on(port)
-
-
-def test_backend_explicit_url_no_spawn_raises(srv):
-    # explicit_url=True 且后端不存在:应报错,且不 spawn。
-    port = _free_port()
-    tmp = tempfile.mkdtemp(prefix="lm-mem-be-")
-    with pytest.raises(RuntimeError):
-        srv._ensure_backend("127.0.0.1", port, tmp, explicit_url=True)
-    # 确认没有残留 spawn 出来的后端。
-    assert srv._connect("127.0.0.1", port) is None
-
-
-def test_backend_fallback_embedded_when_spawn_fails(srv, monkeypatch):
-    # 后端始终起不来时,_ensure_backend 应回退嵌入式 PersistentClient,不抛异常。
-    port = _free_port()
-    tmp = tempfile.mkdtemp(prefix="lm-mem-be-")
-    import db as _db_mod
-
-    monkeypatch.setattr(_db_mod, "_spawn_chroma", lambda *a, **k: None)  # 让 spawn 无效
-    client = _db_mod._ensure_backend("127.0.0.1", port, tmp, wait_seconds=1.0)
-    # 回退后仍可正常建集合读写。
-    col = client.get_or_create_collection("memories")
-    col.add(ids=["f1"], documents=["兜底可用"])
-    assert col.count() == 1
-    assert _db_mod._connect("127.0.0.1", port) is None  # 确认没有真起后端
