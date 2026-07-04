@@ -515,14 +515,7 @@ def purge_expired() -> str:
         "message": f"已清理 {len(expired_ids)} 条过期记忆。",
     })
 
+main = mcp.run
 
-# 开箱即带 Web 记忆台
-# 由环境变量 LM_MEM_WEB(默认 on)控制,设 0/off 时禁用。
-# Web 台用后台 daemon 线程 + 端口抢占保证全局单例,和 Chroma 后端一样。
-if os.environ.get("LM_MEM_WEB", "off").strip().lower() not in ("0", "off", "no", "false"):
-    try:
-        from web import start_web_thread  # noqa: F811
-    except ImportError:
-        pass
-    else:
-        start_web_thread()
+if __name__ == "__main__":
+    main()

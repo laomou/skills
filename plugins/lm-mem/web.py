@@ -32,7 +32,12 @@ import db as _db
 import helpers as _hlp
 
 _VERSION = "0.1.0"
-from mcp_tools import delete_memory as _delete_fn
+def _delete_fn(mem_id):
+    """删除单条记忆(直接调 Chroma,不依赖 MCP 工具层)。"""
+    if not _db._collection.get(ids=[mem_id])["ids"]:
+        return json.dumps({"ok": False, "message": f"未找到 id={mem_id} 的记忆。"})
+    _db._collection.delete(ids=[mem_id])
+    return json.dumps({"ok": True, "id": mem_id, "message": f"已删除 id={mem_id}"})
 
 _HOST = "127.0.0.1"
 _PORT = 7531
@@ -674,7 +679,9 @@ class _Handler(BaseHTTPRequestHandler):
                 records = (_search_records(q, **sv) if q
                            else _list_records(**sv))
                 if path == "/api/list":
-                    return self._send(200, json.dumps(records, ensure_ascii=False),
+                    return self._send(200, json.dumps({"ok": True, "count": len(records),
+                                      "items": records, "message": f"返回 {len(records)} 条"},
+                                      ensure_ascii=False),
                                       "application/json; charset=utf-8")
                 page = int(qs.get("p", ["1"])[0] or "1")
                 notice = None
@@ -688,8 +695,11 @@ class _Handler(BaseHTTPRequestHandler):
             if path == "/api/search":
                 q = qs.get("q", [""])[0].strip()
                 sv = self._scope_from_qs(qs)
+                items = _search_records(q, **sv)
                 return self._send(
-                    200, json.dumps(_search_records(q, **sv), ensure_ascii=False),
+                    200, json.dumps({"ok": True, "count": len(items),
+                                     "items": items, "message": f"搜索到 {len(items)} 条"},
+                                    ensure_ascii=False),
                     "application/json; charset=utf-8")
 
             if path == "/search":

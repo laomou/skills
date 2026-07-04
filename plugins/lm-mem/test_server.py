@@ -22,19 +22,33 @@ _BACKEND_ENV = (
 
 @pytest.fixture()
 def srv():
-    """每个测试用独立的临时 DB 重新加载 server 模块(默认嵌入式)。
-
-    同时清除 db 模块缓存,确保 _collection 指向临时 DB 而非上一轮测试的连接。
-    """
+    """每个测试用独立的临时 DB,从 mcp_tools + db + helpers 组合命名空间。"""
     tmp = tempfile.mkdtemp(prefix="lm-mem-test-")
     os.environ["MEMORY_DB_PATH"] = tmp
     for key in _BACKEND_ENV:
         os.environ.pop(key, None)
-    for mod_name in ("server", "mcp_tools", "db", "helpers"):
+    for mod_name in ("mcp_tools", "db", "helpers"):
         sys.modules.pop(mod_name, None)
-    module = importlib.import_module("server")
-    module = importlib.reload(module)
-    yield module
+
+    import db as _db
+    import helpers as _hlp
+
+    _db = importlib.reload(_db)
+    _hlp = importlib.reload(_hlp)
+    # mcp_tools 最后 reload,让它重新 import 新的 _db / _hlp
+    import mcp_tools as _mt
+    _mt = importlib.reload(_mt)
+
+    srv = type("_Srv", (), {})()
+    srv.__dict__.update({k: v for k, v in _mt.__dict__.items() if not k.startswith("_")})
+    srv.__dict__.update({
+        "_collection": _db._collection,
+        "_client": _db._client,
+        "_connect": _db._connect,
+        "_init_client": _db._init_client,
+        "_is_expired": _hlp._is_expired,
+    })
+    yield srv
 
 
 def _free_port():
