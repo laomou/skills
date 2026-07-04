@@ -31,7 +31,7 @@ import db as _db
 # 为避免与 helpers 命名冲突(都有 _SCOPE_KEYS 等),建短别名。
 import helpers as _hlp
 
-_VERSION = "0.1.0"
+_VERSION = "0.3.0"
 def _delete_fn(mem_id):
     """删除单条记忆(直接调 Chroma,不依赖 MCP 工具层)。"""
     if not _db._collection.get(ids=[mem_id])["ids"]:

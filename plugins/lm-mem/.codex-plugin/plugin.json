@@ -1,6 +1,6 @@
 {
   "name": "lm-mem",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "本地语义(向量)记忆:让 Codex 跨会话保存与检索记忆,支持 user/agent 作用域。",
   "author": {
     "name": "laomou"
