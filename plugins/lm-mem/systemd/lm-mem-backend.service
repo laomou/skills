@@ -1,0 +1,14 @@
+[Unit]
+Description=lm-mem Chroma 后端 (端口 8901)
+Documentation=https://github.com/laomou/skills/tree/main/plugins/lm-mem
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=%h/.local/share/uv/tools/chroma/bin/chroma run --path %h/.claude/lm-mem/chroma --host 127.0.0.1 --port 8901
+Restart=on-failure
+RestartSec=3
+Environment=UV_PYTHON=%h/work/code/skills/plugins/lm-mem/.venv/bin/python
+
+[Install]
+WantedBy=default.target
