@@ -35,15 +35,6 @@ def _w(s):
     print(s, file=sys.stderr)
 
 
-def _sc(args: list[str]) -> subprocess.CompletedProcess:
-    return subprocess.run(["systemctl", "--user"] + args, capture_output=True, text=True)
-
-
-def _systemd_installed(name: str) -> bool:
-    r = _sc(["list-unit-files", f"{name}.service"])
-    return r.returncode == 0 and name in r.stdout
-
-
 # ── backend ──────────────────────────────────────────
 
 
@@ -68,52 +59,27 @@ def _backend_start(host=None, port=None):
     if _backend_running(host, port):
         _w(f"后端已在运行:http://{host}:{port}")
         return
-
-    # 用户自定义 host/port → 直接 nohup 起(绕过 systemd)
-    if host != BACKEND_HOST or port != BACKEND_PORT:
-        _w(f"启动后端(nohup) → http://{host}:{port}")
-        DB_PATH = _get_db_path()
-        log = open(str(PID_DIR.parent / "logs" / "backend.log"), "ab")
-        proc = subprocess.Popen(
-            [str(VENV_CHROMA), "run", "--path", DB_PATH, "--host", host, "--port", str(port)],
-            stdout=log, stderr=log, stdin=subprocess.DEVNULL, start_new_session=True,
-        )
-        for _ in range(60):
-            if _backend_running(host, port):
-                _w(f"后端已就绪 (pid={proc.pid})")
-                return
-            time.sleep(0.5)
-        _w("后端启动超时")
-        sys.exit(1)
-
-    # 默认 → systemd
-    if not _systemd_installed("lm-mem-backend"):
-        _w("后端 systemd 服务未安装,请先: cd systemd && ./install.sh")
-        _w("或指定 --host --port 临时启动")
-        sys.exit(1)
-    _sc(["start", "lm-mem-backend.service"])
+    _w(f"启动后端 → http://{host}:{port}")
+    DB_PATH = _get_db_path()
+    log = open(str(PID_DIR.parent / "logs" / "backend.log"), "ab")
+    proc = subprocess.Popen(
+        [str(VENV_CHROMA), "run", "--path", DB_PATH, "--host", host, "--port", str(port)],
+        stdout=log, stderr=log, stdin=subprocess.DEVNULL, start_new_session=True,
+    )
     for _ in range(60):
-        if _sc(["is-active", "lm-mem-backend.service"]).returncode == 0:
-            _w(f"后端已就绪 → http://{host}:{port}")
+        if _backend_running(host, port):
+            _w(f"后端已就绪 (pid={proc.pid})")
             return
         time.sleep(0.5)
     _w("后端启动超时")
-    _w(_sc(["status", "lm-mem-backend.service"]).stdout)
     sys.exit(1)
 
 
 def _backend_stop(host=None, port=None):
-    if _systemd_installed("lm-mem-backend"):
-        _sc(["stop", "lm-mem-backend.service"])
-        _w("后端已停止")
-        return
     host, port = _backend_defaults(host, port)
-    if not _backend_running(host, port):
-        _w("后端未运行")
-        return
     p = subprocess.run(["pkill", "-f", f"chroma.*run.*--port {port}"], capture_output=True)
     if p.returncode == 0:
-        _w("后端已停止(按端口匹配)")
+        _w("后端已停止")
     else:
         _w("后端未运行")
 
