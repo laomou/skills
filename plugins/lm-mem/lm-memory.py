@@ -5,7 +5,6 @@
   python lm-memory.py backend start|stop|restart|status [--host HOST] [--port PORT]
   python lm-memory.py web     start|stop|restart|status [--host HOST] [--port PORT]
   python lm-memory.py mcp
-  python lm-memory.py start|stop|status               [--host HOST] [--port PORT]
 """
 from __future__ import annotations
 
@@ -215,11 +214,6 @@ def _build_parser():
     sub = p.add_subparsers(dest="entity", required=True)
     sub.add_parser("mcp", help="前台运行 MCP server")
 
-    for name in ("start", "stop", "status"):
-        sp = sub.add_parser(name, parents=[conn], help=f"{name} 后端+Web")
-        sp.add_argument("target", nargs="?", default="all",
-                        choices=["all", "backend", "web"])
-
     for entity in ("backend", "web"):
         ep = sub.add_parser(entity, parents=[conn], help=f"{entity} 管理")
         ep.add_argument("action", nargs="?", default="status",
@@ -227,27 +221,9 @@ def _build_parser():
     return p
 
 
-def _run(entity, action, host, port, target):
+def _run(entity, action, host, port):
     if entity == "mcp":
         _mcp_run()
-        return
-
-    def _do_entity(e, fn):
-        _w(f"--- {e} ---")
-        fn()
-
-    if entity in ("start", "stop", "status"):
-        if target in ("all", "backend"):
-            args = (host, port) if entity != "stop" else ()
-            fn = {"start": lambda: _backend_start(host, port),
-                  "stop": _backend_stop,
-                  "status": lambda: _backend_status(host, port)}[entity]
-            _do_entity("backend", fn)
-        if target in ("all", "web"):
-            fn = {"start": lambda: _web_start(host, port),
-                  "stop": _web_stop,
-                  "status": lambda: _web_status(host, port)}[entity]
-            _do_entity("web", fn)
         return
 
     if entity in ("backend", "web"):
@@ -268,8 +244,7 @@ def _run(entity, action, host, port, target):
 def _dispatch():
     p = _build_parser()
     args = p.parse_args()
-    _run(args.entity, getattr(args, "action", ""), args.host, args.port,
-         getattr(args, "target", "all"))
+    _run(args.entity, getattr(args, "action", ""), args.host, args.port)
 
 
 if __name__ == "__main__":
