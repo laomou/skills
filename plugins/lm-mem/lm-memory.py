@@ -88,7 +88,7 @@ def _backend_start(host=None, port=None):
 
     # 默认 → systemd
     if not _systemd_installed("lm-mem-backend"):
-        _w("后端 systemd 服务未安装,请先: cd systemd && ./install.sh start")
+        _w("后端 systemd 服务未安装,请先: cd systemd && ./install.sh")
         _w("或指定 --host --port 临时启动")
         sys.exit(1)
     _sc(["start", "lm-mem-backend.service"])

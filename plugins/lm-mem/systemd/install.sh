@@ -12,4 +12,4 @@ for name in lm-mem-backend lm-mem-web; do
     echo "✓ $name.service"
 done
 systemctl --user daemon-reload
-echo "已安装。启动: python lm-memory.py start 或 systemctl --user start lm-mem-backend lm-mem-web"
+echo "已安装。启动: systemctl --user start lm-mem-backend lm-mem-web"
