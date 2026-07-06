@@ -1,15 +1,8 @@
 {
   "mcpServers": {
     "memory": {
-      "command": "uv",
-      "args": [
-        "run",
-        "--project",
-        "${CODEX_PLUGIN_ROOT}",
-        "python",
-        "${CODEX_PLUGIN_ROOT}/manage.py",
-        "mcp"
-      ]
+      "command": "uvx",
+      "args": ["lm-mem-mcp"]
     }
   }
 }
