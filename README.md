@@ -55,15 +55,3 @@ Claude Code 插件市场,当前收录一个插件:**lm-mem** —— 跨会话语
 ```
 
 装完后 MCP 工具自动可用,技能通过 `/lm-mem:memory` 调用。
-
-## Web UI
-
-自带只读 Web 界面,浏览器查看/检索记忆:
-
-```shell
-pip install lm-mem
-lm-mem web start   # http://127.0.0.1:7531
-# 或
-uvx lm-mem web start
-```
-
