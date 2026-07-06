@@ -26,25 +26,7 @@ Claude Code 插件市场,当前收录一个插件:**lm-mem** —— 跨会话语
 > 底层核心包 [`lm-mem`](https://github.com/laomou/lm-mem) 独立在 PyPI 发布,
 > 本插件是 Claude Code 集成壳。`uvx lm-mem mcp` 自动拉取最新版本。
 
-### MCP 工具(14 个)
-
-| 工具 | 用途 |
-|------|------|
-| `add_memory` | 保存一条记忆(content/messages、metadata、TTL,自动查重) |
-| `search_memories` | 语义检索(按作用域 / metadata 过滤) |
-| `get_memories` | 列出记忆(分页 + 过滤) |
-| `get_memory` | 按 id 获取单条 |
-| `update_memory` | 更新文本 / metadata / 标签 |
-| `delete_memory` | 删除单条 |
-| `delete_all_memories` | 批量删除某作用域内全部记忆 |
-| `delete_entities` | 删除某实体及其记忆 |
-| `list_entities` | 列出已存的实体 |
-| `memory_stats` | 统计总数、聚合、过期数 |
-| `export_memories` | 导出(JSON / CSV) |
-| `import_memories` | 导入(JSON / CSV) |
-| `purge_expired` | 清理过期记忆 |
-| `get_user_context` | 获取用户长期属性 |
-
+插件暴露记忆的增删改查、语义检索、导入导出等 MCP 工具,完整清单见 lm-mem 仓库;
 配套技能 `/lm-mem:memory` 负责告诉 Claude **何时**调用这些工具。
 
 ## 安装
