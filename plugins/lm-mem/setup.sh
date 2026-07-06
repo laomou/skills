@@ -3,7 +3,7 @@
 #
 # 做三件事:
 #   1. 用 uv 同步依赖(.venv)
-#   2. 起 Chroma 后端到 8901
+#   2. 起后端到 8901
 #   3. 起 Web UI 到 7531
 #
 # 完成后:
@@ -27,18 +27,18 @@ fi
 
 echo ""
 echo "== 2/3 启动后端(8901) =="
-./manage.py backend start
+uv run python manage.py backend start
 
 echo ""
 echo "== 3/3 启动 Web UI(7531) =="
-./manage.py web start
+uv run python manage.py web start
 
 echo ""
 echo "════════════════════════════════════════"
 echo "✓ 安装完成"
 echo ""
 echo "  Web UI:      http://127.0.0.1:7531"
-echo "  管理命令:    ./manage.py {backend|web} {start|stop|restart|status}"
+echo "  管理命令:    uv run python manage.py {backend|web} {start|stop|restart|status}"
 echo ""
 echo "  在 Claude Code 中启用:"
 echo "    /plugin install lm-mem@laomou-skills"
