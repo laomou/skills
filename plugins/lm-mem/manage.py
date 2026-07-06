@@ -219,7 +219,8 @@ def _run(entity, action, host, port):
 def main():
     p = _build_parser()
     args = p.parse_args()
-    _run(args.entity, getattr(args, "action", ""), args.host, args.port)
+    _run(args.entity, getattr(args, "action", ""),
+         getattr(args, "host", None), getattr(args, "port", None))
 
 
 if __name__ == "__main__":
