@@ -2,7 +2,7 @@
   "mcpServers": {
     "memory": {
       "command": "uvx",
-      "args": ["lm-mem-mcp"]
+      "args": ["lm-mem", "mcp"]
     }
   }
 }

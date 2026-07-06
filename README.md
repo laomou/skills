@@ -12,9 +12,8 @@ Claude Code 插件市场,当前收录一个插件:**lm-mem** —— 跨会话语
 │   └── marketplace.json          # Codex 市场清单
 └── plugins/
     └── lm-mem/                   # 插件:语义记忆
-        ├── .mcp.json             # MCP 注册:uvx lm-mem-mcp
+        ├── .mcp.json             # MCP 注册:uvx lm-mem mcp
         ├── .codex-mcp.json       # Codex MCP 注册
-        ├── README.md             # 简短说明
         └── skills/
             └── memory/
                 └── SKILL.md      # 技能:何时存/取记忆
@@ -25,7 +24,7 @@ Claude Code 插件市场,当前收录一个插件:**lm-mem** —— 跨会话语
 让 Claude 跨会话保存与检索记忆。每条记忆可绑定作用域,做多用户/场景隔离。
 
 > 底层核心包 [`lm-mem`](https://github.com/laomou/lm-mem) 独立在 PyPI 发布,
-> 本插件是 Claude Code 集成壳。`uvx lm-mem-mcp` 自动拉取最新版本。
+> 本插件是 Claude Code 集成壳。`uvx lm-mem mcp` 自动拉取最新版本。
 
 ### MCP 工具(14 个)
 
@@ -68,6 +67,3 @@ lm-mem web start   # http://127.0.0.1:7531
 uvx lm-mem web start
 ```
 
-## 环境变量
-
-由 `lm-mem` 包处理,详见 [lm-mem README](https://github.com/laomou/lm-mem)。
