@@ -10,6 +10,8 @@ Claude Code 插件市场,当前收录一个插件:**lm-mem** —— 跨会话语
 │   └── marketplace.json          # Claude 市场清单
 ├── .codex-plugin/
 │   └── marketplace.json          # Codex 市场清单
+├── .gitignore
+├── README.md
 └── plugins/
     └── lm-mem/                   # 插件:语义记忆
         ├── .mcp.json             # MCP 注册:uvx lm-mem mcp
