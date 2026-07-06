@@ -7,11 +7,9 @@
         "--project",
         "${CLAUDE_PLUGIN_ROOT}",
         "python",
-        "${CLAUDE_PLUGIN_ROOT}/mcp_tools.py"
-      ],
-      "env": {
-        "MEMORY_CHROMA_URL": "http://127.0.0.1:8901"
-      }
+        "${CLAUDE_PLUGIN_ROOT}/manage.py",
+        "mcp"
+      ]
     }
   }
 }

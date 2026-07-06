@@ -1,5 +1,5 @@
 [project]
-name = "memory-mcp"
+name = "lm-mem"
 version = "0.3.0"
 description = "Claude 本地语义记忆 MCP Server"
 requires-python = ">=3.10"
@@ -15,4 +15,4 @@ dev = [
 
 [tool.pytest.ini_options]
 addopts = "-q"
-testpaths = ["test_server.py"]
+testpaths = ["tests"]

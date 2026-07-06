@@ -9,8 +9,6 @@ import time
 
 # 作用域字段:归属实体的维度。
 _SCOPE_KEYS = ("user_id", "agent_id", "app_id", "run_id")
-# 内部保留的 metadata 键(不属于用户自定义 metadata)。
-_RESERVED_KEYS = _SCOPE_KEYS + ("created_at", "updated_at", "tags", "expires_at")
 # 用户自定义 metadata 的键前缀,避免与保留键冲突。
 _MD_PREFIX = "m:"
 # 添加去重:语义相似度 >= 该阈值视为疑似重复。
@@ -126,10 +124,10 @@ def _is_expired(meta, now=None):
     return exp <= (now if now is not None else time.time())
 
 
-def _to_dict(mem_id, doc, meta):
+def _memory_to_record(mem_id, doc, meta):
     """把一条记忆转成结构化 dict(用于 JSON 输出)。"""
     meta = meta or {}
-    rec = {
+    return {
         "id": mem_id,
         "content": doc,
         "tags": meta.get("tags") or "",
@@ -139,27 +137,10 @@ def _to_dict(mem_id, doc, meta):
         "scope": {k: meta[k] for k in _SCOPE_KEYS if k in meta},
         "metadata": _user_metadata(meta),
     }
-    return rec
 
 
-def _fmt(mem_id, doc, meta):
-    meta = meta or {}
-    scope = {k: meta[k] for k in _SCOPE_KEYS if k in meta}
-    tags = meta.get("tags") or "-"
-    scope_str = json.dumps(scope, ensure_ascii=False) if scope else "-"
-    lines = [f"id={mem_id}", f"  内容: {doc}", f"  作用域: {scope_str}", f"  标签: {tags}"]
-    user_md = _user_metadata(meta)
-    if user_md:
-        lines.append(f"  元数据: {json.dumps(user_md, ensure_ascii=False)}")
-    if meta.get("expires_at"):
-        lines.append(
-            f"  过期于: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(meta['expires_at']))}"
-        )
-    return "\n".join(lines)
-
-
-def _hits_to_dicts(res, limit, now=None):
-    """把 query 结果转成 dict 列表,附带 similarity,跳过过期项,最多 limit 条。"""
+def _hits_to_records(res, limit, now=None):
+    """把 query 结果转成 record 列表,附带 similarity,跳过过期项,最多 limit 条。"""
     ids = res["ids"][0] if res["ids"] else []
     if not ids:
         return []
@@ -170,7 +151,7 @@ def _hits_to_dicts(res, limit, now=None):
     ):
         if _is_expired(meta, now):
             continue
-        rec = _to_dict(mem_id, doc, meta)
+        rec = _memory_to_record(mem_id, doc, meta)
         rec["similarity"] = round(1 - dist, 3)
         out.append(rec)
         if len(out) >= limit:

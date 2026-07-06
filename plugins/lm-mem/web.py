@@ -26,10 +26,10 @@ import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
-import db as _db
+import backend as _db
 
 # 为避免与 helpers 命名冲突(都有 _SCOPE_KEYS 等),建短别名。
-import helpers as _hlp
+import memory_utils as _hlp
 
 _VERSION = "0.3.0"
 def _delete_fn(mem_id):
