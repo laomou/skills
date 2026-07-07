@@ -1,0 +1,12 @@
+{
+  "name": "laomou-skills",
+  "description": "laomou 的 Claude Code 插件市场",
+  "version": "1.0.0",
+  "author": {
+    "name": "laomou"
+  },
+  "homepage": "https://github.com/laomou/skills",
+  "repository": "https://github.com/laomou/skills",
+  "license": "Apache-2.0",
+  "keywords": ["skills", "claude-code"]
+}
