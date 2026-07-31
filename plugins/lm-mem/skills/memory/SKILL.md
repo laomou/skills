@@ -158,7 +158,7 @@ description: 跨会话记忆用户偏好、项目决策和历史上下文。当�
 
 ## 🔄 更新、去重与矛盾处理
 
-当 `search_memories` 返回**高度相似**的记忆（语义相似度 > 0.85）时，优先更新而不是新增。
+当 `search_memories` 返回**高度相似**的记忆（语义相似度 ≥ 0.85）时，优先更新而不是新增。
 
 ### 信息一致但更详细 → 补充细节
 - **旧记忆**：用户喜欢简洁代码
@@ -200,6 +200,10 @@ description: 跨会话记忆用户偏好、项目决策和历史上下文。当�
 
 **一次会话内多次调整偏好**——同话题内等最终结论确定再 update 一次；不同话题分别处理。
 
+> ⚠️ **查重只在同一作用域内比对**。同样的内容换个 `user_id` 会各存一份、不会命中
+> `duplicate_id`。所以"为什么这条明显重复却没触发查重"通常是作用域填得不一致 ——
+> 先确认 `user_id` / `app_id` 是不是同一个值，而不是直接 `force=True`。
+
 ---
 
 ## 🎯 作用域选择指南
@@ -223,7 +227,9 @@ description: 跨会话记忆用户偏好、项目决策和历史上下文。当�
 - 信息是 **Agent 自身策略** → `agent_id`
 - 信息**仅本次会话有效** → `run_id`
 - 组合优先 `user_id` + `app_id`（该用户在该项目中的事实）
-- 最少提供一个作用域参数，否则工具会报错
+- **`add_memory` 不带作用域也不会报错**，会存成一条"无归属"的全局记忆 —— 工具不会
+  拦你，所以作用域得靠上面的规则自觉填全。（只有 `delete_all_memories` 强制要求
+  至少一个作用域，那是为了防误删整库。）
 
 ### 如何确定 user_id
 
@@ -304,9 +310,13 @@ metadata_filter='{"category":"preference OR decision"}'
 | `preference`/`identity`/`environment`/`decision` | 不设置（永久） | 除非用户显式改口，不该过期 |
 | `concept`/`anti_pattern` | 不设置 | 术语和踩坑长期有价值 |
 | `episode` | 1 天 ~ 不设 | 情节可能过时，视具体决策的时效性定 |
-| 临时约定/便签 | 1 小时 ~ 7 天 | 单次 run 内的进度，过期自动清理 |
+| 临时约定/便签 | 1 小时 ~ 7 天 | 单次 run 内的进度，到期后被回收 |
 
-TTL 到期后，记忆会被自动清理（由 `purge_expired` 工具处理）。
+TTL 到期后，记忆**立刻从检索/列表结果中消失**，但数据行还在库里 —— 真正删除发生在
+两个时机:`lm-mem mcp` 启动时会自动清一次(可用 `LM_MEM_AUTO_PURGE=0` 关闭),
+或你主动调 `purge_expired`。
+
+所以 TTL 的语义是"到期即不可见",不要指望它在会话中途把行也删掉。
 
 ---
 
@@ -388,6 +398,6 @@ TTL 到期后，记忆会被自动清理（由 `purge_expired` 工具处理）�
 | `get_user_context(user_id, limit=10)` | **新会话冷启动**,一次拉核心 preference/identity/environment。`user_id` 别留空(留空只返回无归属的全局记忆) |
 | `add_memory(content, user_id?, tags?, metadata?, ttl_seconds?)` | 保存(默认自动查重) |
 | `search_memories(query, user_id?, metadata_filter?, limit?)` | 语义检索 |
-| `update_memory(mem_id, content?, metadata?, tags?)` | 事实变化时原地更新 |
+| `update_memory(mem_id, content?, metadata?, tags?)` | 事实变化时原地更新。`tags` 不传=不改，传 `""`=清空标签 |
 | `delete_memory(mem_id)` | 显式忘记某条 |
 | `import_memories(data, fmt?, overwrite?, new_ids?)` | 从 `export_memories` 结果还原备份 |
