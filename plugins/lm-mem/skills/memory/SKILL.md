@@ -199,12 +199,16 @@ description: 跨会话记忆用户偏好、项目决策和历史上下文。当�
 
 ## ⚡ 新会话冷启动
 
-新会话第一轮涉及**代码/行为决策**时,先调 `get_user_context(user_id="<user>")`
+新会话第一轮涉及**代码/行为决策**时,先调 `get_user_context(user_id=...)`
 把用户的核心偏好/身份/环境一次性吃进上下文(而非每次 search)。
+`user_id` 按「🎯作用域选择指南 · 如何确定 user_id」解析(`git config user.name`,
+取不到退回 `$USER`)。
 
 - 返回按 importance:high 优先,默认 10 条
 - 只包含 `preference` / `identity` / `environment` 三类核心 category
 - 用完了这次会话不用再查(除非用户切了 user_id)
+- **`user_id` 必须传**:留空只会返回"无 user_id 归属"的全局记忆(这是防跨用户
+  泄露的设计),拿不到该用户的画像 —— 冷启动会静默变成空转
 
 替代方案:如果用户明确说"你不用记忆",跳过这步。
 
@@ -232,6 +236,20 @@ description: 跨会话记忆用户偏好、项目决策和历史上下文。当�
 - 信息**仅本次会话有效** → `run_id`
 - 组合优先 `user_id` + `app_id`（该用户在该项目中的事实）
 - 最少提供一个作用域参数，否则工具会报错
+
+### 如何确定 user_id
+
+`user_id` 标识**人**,必须全程稳定 —— 同一个人在不同 agent、不同项目下必须解析出同一个值,否则记忆会互相看不见。取值：
+
+1. 优先 `git config user.name`
+2. 取不到时退回操作系统用户名（`$USER`，Windows 用 `%USERNAME%`）
+
+**原样使用,不要转大小写、不要替换空格** —— 任何变换都必须在所有地方一致,否则同一个人会被拆成多个作用域。
+
+> ⚠️ **务必配成全局**:`git config --global user.name <名字>`。
+> 如果只在某个仓库里配过（`--local`），那在其他项目下 `git config user.name` 取到的是空,
+> 于是回退到 `$USER` —— 同一个人在 A 项目是 `laomou`、在 B 项目变成 `mourui`,
+> 两边的记忆彼此不可见,而且不会有任何报错提示你。
 
 ### 如何推断 app_id
 
@@ -411,7 +429,7 @@ TTL 到期后，记忆会被自动清理（由 `purge_expired` 工具处理）�
 
 | 工具 | 场景 |
 |------|------|
-| `get_user_context(user_id?, limit=10)` | **新会话冷启动**,一次拉核心 preference/identity/environment |
+| `get_user_context(user_id, limit=10)` | **新会话冷启动**,一次拉核心 preference/identity/environment。`user_id` 别留空(留空只返回无归属的全局记忆) |
 | `add_memory(content, user_id?, tags?, metadata?, ttl_seconds?)` | 保存(默认自动查重) |
 | `search_memories(query, user_id?, metadata_filter?, limit?)` | 语义检索 |
 | `update_memory(mem_id, content?, metadata?, tags?)` | 事实变化时原地更新 |
