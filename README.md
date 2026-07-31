@@ -1,29 +1,33 @@
 # laomou-skills
 
-Claude Code / Codex 插件市场。
+[中文](README_zh.md)
 
-## 安装
+Plugin marketplace for Claude Code / Codex.
 
-添加市场：
+## Install
+
+Add the marketplace:
 
 ```shell
 /plugin marketplace add laomou/skills
 ```
 
-## 插件列表
+## Plugins
 
 ### lm-mem
 
-跨会话语义记忆，让 Claude 跨会话保存与检索记忆。每条记忆可绑定作用域，做多用户/场景隔离。
+Cross-session semantic memory — let Claude save and retrieve memories across sessions. Each
+memory can be bound to a scope for multi-user / multi-context isolation.
 
-安装：
+Install:
 
 ```shell
 /plugin install lm-mem@laomou-skills
 ```
 
-底层核心：[lm-mem](https://github.com/laomou/lm-mem) 独立 PyPI 包，本插件为 Claude Code 集成壳。
+Core: [lm-mem](https://github.com/laomou/lm-mem), a standalone PyPI package; this plugin is the
+Claude Code integration shell.
 
-MCP 工具：增删改查、语义检索、导入导出
+MCP tools: create / read / update / delete, semantic search, import / export
 
-技能：`/lm-mem:memory` —— 告诉 Claude 何时调用工具
+Skill: `/lm-mem:memory` — tells Claude when to call the tools
